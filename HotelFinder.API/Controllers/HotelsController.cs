@@ -1,19 +1,26 @@
-﻿using HotelFinder.Business.Abstract;
+﻿using HotelFinder.API.Auth;
+using HotelFinder.Business.Abstract;
 using HotelFinder.Business.Concrete;
 using HotelFinder.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HotelFinder.API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class HotelsController : ControllerBase
     {
         private IHotelService? _hotelService;
-        public HotelsController(IHotelService hotelService)
+        private IJwtAuthenticationManager jwtAuthenticationManager;
+
+        
+        public HotelsController(IHotelService hotelService, IJwtAuthenticationManager jwtAuthenticationManager)
         {
             _hotelService = hotelService;
+            this.jwtAuthenticationManager = jwtAuthenticationManager;
         }
 
         /// <summary>
@@ -110,5 +117,18 @@ namespace HotelFinder.API.Controllers
             return NotFound();
             
         }
+
+        [AllowAnonymous]
+        [HttpPost("authenticate")]
+        public IActionResult Authenticate([FromBody] UserCred userCred)
+        {
+            var token = jwtAuthenticationManager.Authenticate(userCred.UserName, userCred.Password);
+            if (token == null)
+            {
+                return Unauthorized();
+            }
+            return Ok(token);
+        }
     }
 }
+
